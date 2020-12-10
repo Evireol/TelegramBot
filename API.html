@@ -1,0 +1,54 @@
+<script>
+var chat_id;
+var update_id;
+var first_start = true;
+var message;
+var Open_Weather_Appid = "15a1f81f519847d389cbd25a350eab45";
+
+var app = 
+{
+    Update: function()
+    {
+        fetch('https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/getUpdates?offset=-1')
+        .then(response => response.json())
+        .then(data => 
+            {
+                if(first_start == true)
+                {
+                    update_id = data.result[0].update_id;
+                    first_start = false;
+                }
+                else
+                {
+                    if (data.result[0].update_id != update_id)
+                    {
+                        chat_id = data.result[0].message.chat.id;
+                        message = data.result[0].message.text;
+
+                        fetch("http://api.openweathermap.org/data/2.5/weather?q=" + message + "&appid=" + Open_Weather_Appid)
+                        .then(response => response.json())
+                        .then(data =>
+                            {   
+                                fetch("https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/SendMessage?chat_id=" + chat_id + "&text=" + 
+                                "City: " + data.name +
+                                "%0ATemperature: " + Math.round(data.main.temp - 273) + " (degrees Centigrade)" + 
+                                "%0AStatus: " + data.weather[0]['description']);
+                            }
+                        )
+                        .catch(err => 
+                        (
+                            fetch("https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/SendMessage?chat_id=" + chat_id + "&text=" + "ГОРОД НЕ НАЙДЕН!"),
+                            console.log ("ОШИБКА!")
+                        ))
+                        console.log("НОВОЕ СООБЩЕНИЕ");
+                        update_id = data.result[0].update_id;
+                    }
+                }
+            }
+        )
+        setTimeout(() => app.Update(), 1000);
+    }
+}
+
+app.Update();
+</script>
