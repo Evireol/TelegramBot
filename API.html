@@ -1,54 +1,141 @@
+<CSS>
+    <style>
+        table 
+        {
+            background-image: url(background.jpg);
+            background-size: cover;
+            background-repeat: no-repeat;
+            border-radius: 10px;
+            border: 5px solid black;
+        }
+        table 
+        {
+            border-spacing: 0;
+        }
+        p 
+        {
+            font-size: 120%; 
+        }
+        #tr1_td1
+        {
+            border-bottom: 3px solid;
+            background-color: rgb(228, 228, 228);
+        }
+        #tr1_td2
+        {
+            border-bottom: 3px solid;
+            background-color: rgb(228, 228, 228);
+        }
+        #tr2_td1
+        {
+
+            border-right: 3px solid;
+            width: 100px;
+        }
+        #tr2_td2
+        {
+            padding-right: 10;
+            text-align: right; 
+            font-family: FANTASY;
+            width: 200px;
+        }
+        #tr2_td3
+        {
+            text-align: left; 
+            font-family: TAHOMA; 
+            width: 200px;
+        }
+        input[type="text"]
+        {
+            background-color: transparent;
+            border: none;
+            font-family: TAHOMA; 
+        }
+        input[type="button"]
+        {
+            font-family: TAHOMA; 
+            border: 2px solid;
+            border-radius: 10px;
+        }
+        ::placeholder 
+        {
+            font-size: 120%;
+        }
+    </style>
+</CSS>
+
+<html>
+    <table>
+        <TR>
+            <TD id="tr1_td1" colspan="3">
+                <input type="text" id="input__city"  size = "65" background="transparent" placeholder="Введи название города на английском..." required>
+            </TD>
+            <TD id="tr1_td2">
+                <input type="button" value="OK" onclick="runScript()">
+            </TD>
+        </TR>
+        <tr>
+            <td id="tr2_td1">
+                <p class="weather__icon"></p>
+            </td>
+            <td id="tr2_td2">
+                <p> City:</p>
+                <p> Temperature:</p>
+                <p> Status:</p>
+            </td>
+            <td id="tr2_td3">
+                <p class="weather__city"></p>
+                <p class="weather__forecast"></p>
+                <p class="weather__desc"></p>
+            </td>
+        </tr>
+    </table>
+</html>
+
 <script>
-var chat_id;
-var update_id;
-var first_start = true;
-var message;
-var Open_Weather_Appid = "15a1f81f519847d389cbd25a350eab45";
-
-var app = 
+function runScript()
 {
-    Update: function()
-    {
-        fetch('https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/getUpdates?offset=-1')
-        .then(response => response.json())
-        .then(data => 
-            {
-                if(first_start == true)
-                {
-                    update_id = data.result[0].update_id;
-                    first_start = false;
-                }
-                else
-                {
-                    if (data.result[0].update_id != update_id)
-                    {
-                        chat_id = data.result[0].message.chat.id;
-                        message = data.result[0].message.text;
+    var city_name = document.getElementById("input__city").value;
+    var error_control = 0;
+    var chat_id;
 
-                        fetch("http://api.openweathermap.org/data/2.5/weather?q=" + message + "&appid=" + Open_Weather_Appid)
-                        .then(response => response.json())
-                        .then(data =>
-                            {   
-                                fetch("https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/SendMessage?chat_id=" + chat_id + "&text=" + 
-                                "City: " + data.name +
-                                "%0ATemperature: " + Math.round(data.main.temp - 273) + " (degrees Centigrade)" + 
-                                "%0AStatus: " + data.weather[0]['description']);
-                            }
-                        )
-                        .catch(err => 
-                        (
-                            fetch("https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/SendMessage?chat_id=" + chat_id + "&text=" + "ГОРОД НЕ НАЙДЕН!"),
-                            console.log ("ОШИБКА!")
-                        ))
-                        console.log("НОВОЕ СООБЩЕНИЕ");
-                        update_id = data.result[0].update_id;
-                    }
-                }
-            }
-        )
-        setTimeout(() => app.Update(), 1000);
-    }
+    // Получение chat id
+
+    fetch('https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/getUpdates?offset=-1')
+    .then(response => response.json())
+    .then(data =>
+        {   
+            chat_id = data.result[0].message.chat.id;
+        }
+    )
+
+    // Обращение к openweathermap
+
+    fetch('http://api.openweathermap.org/data/2.5/weather?q=' + city_name+'&appid=15a1f81f519847d389cbd25a350eab45')
+    .then(response => response.json())
+    .then(data =>
+        {   
+            document.querySelector('.weather__city').textContent = data.name;
+            document.querySelector('.weather__forecast').innerHTML = Math.round(data.main.temp - 273) + '&deg;';
+            document.querySelector('.weather__desc').textContent = data.weather[0]['description'];
+            document.querySelector('.weather__icon').innerHTML = `<img src="https://openweathermap.org/img/wn/${data.weather[0]['icon']}@2x.png">`;
+
+            // Отправка в Telegram информации
+
+            fetch("https://api.telegram.org/bot1452713787:AAGq15AhmiCjzIUQyLy2-xNnRh3EdzQQvDI/SendMessage?chat_id=" + chat_id + "&text=" + 
+            "City: " + data.name +
+            "%0ATemperature: " + Math.round(data.main.temp - 273) + " (degrees Centigrade)" + 
+            "%0AStatus: " + data.weather[0]['description']);
+        }
+    )
+    .catch(err => 
+    (
+        alert ("Прогноз по введенному городу не найден!"),
+        document.querySelector('.weather__city').textContent = null,
+        document.querySelector('.weather__forecast').innerHTML = null,
+        document.querySelector('.weather__desc').textContent = null,
+        document.querySelector('.weather__icon').innerHTML = null
+    ))
 }
 
-app.Update();
 </script>
